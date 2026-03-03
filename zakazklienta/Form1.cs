@@ -128,7 +128,7 @@ public partial class Form1 : Form
     private void BtnExport_Click(object? sender, EventArgs e)
     {
         if (_rows == null) return;
-        
+
         using var dlg = new SaveFileDialog
         {
             Title = "Сохранить XML",
@@ -425,37 +425,43 @@ public partial class Form1 : Form
 
         // ДанныеВзаиморасчетов
         xw.WriteStartElement("ДанныеВзаиморасчетов");
-        xw.WriteStartElement("Договор");
-        E(xw, "Ссылка", f, 26);
-        E(xw, "ВидДоговора", f, 27);
-        xw.WriteStartElement("Организация");
-        E(xw, "Ссылка", f, 28);
-        E(xw, "Наименование", f, 29);
-        E(xw, "НаименованиеСокращенное", f, 30);
-        E(xw, "НаименованиеПолное", f, 31);
-        E(xw, "ИНН", f, 32);
-        E(xw, "КПП", f, 33);
-        E(xw, "ЮридическоеФизическоеЛицо", f, 34);
-        xw.WriteEndElement();
-        xw.WriteStartElement("Контрагент");
-        E(xw, "Ссылка", f, 35);
-        E(xw, "Наименование", f, 36);
-        E(xw, "НаименованиеПолное", f, 37);
-        E(xw, "ИНН", f, 38);
-        E(xw, "КПП", f, 39);
-        E(xw, "ЮридическоеФизическоеЛицо", f, 40);
-        xw.WriteEndElement();
-        xw.WriteStartElement("ВалютаВзаиморасчетов");
-        E(xw, "Ссылка", f, 41);
-        xw.WriteStartElement("ДанныеКлассификатора");
-        E(xw, "Код", f, 42);
-        E(xw, "Наименование", f, 43);
-        xw.WriteEndElement();
-        xw.WriteEndElement();
-        E(xw, "Наименование", f, 44);
-        xw.WriteElementString("Дата", Get(f, 45) == "null.null.null null:null" ? string.Empty : Get(f, 45));
-        xw.WriteEndElement(); // Договор
 
+        var contractRef = Get(f, 26);
+
+        if (!string.IsNullOrWhiteSpace(contractRef) && contractRef != "null")
+        {
+            xw.WriteStartElement("Договор");
+            E(xw, "Ссылка", f, 26);
+            E(xw, "ВидДоговора", f, 27);
+            xw.WriteStartElement("Организация");
+            E(xw, "Ссылка", f, 28);
+            E(xw, "Наименование", f, 29);
+            E(xw, "НаименованиеСокращенное", f, 30);
+            E(xw, "НаименованиеПолное", f, 31);
+            E(xw, "ИНН", f, 32);
+            E(xw, "КПП", f, 33);
+            E(xw, "ЮридическоеФизическоеЛицо", f, 34);
+            xw.WriteEndElement();
+            xw.WriteStartElement("Контрагент");
+            E(xw, "Ссылка", f, 35);
+            E(xw, "Наименование", f, 36);
+            E(xw, "НаименованиеПолное", f, 37);
+            E(xw, "ИНН", f, 38);
+            E(xw, "КПП", f, 39);
+            E(xw, "ЮридическоеФизическоеЛицо", f, 40);
+            xw.WriteEndElement();
+            xw.WriteStartElement("ВалютаВзаиморасчетов");
+            E(xw, "Ссылка", f, 41);
+            xw.WriteStartElement("ДанныеКлассификатора");
+            E(xw, "Код", f, 42);
+            E(xw, "Наименование", f, 43);
+            xw.WriteEndElement();
+            xw.WriteEndElement();
+            E(xw, "Наименование", f, 44);
+            xw.WriteElementString("Дата", FormatContractDate(Get(f, 45)));
+            xw.WriteEndElement(); // Договор
+        }
+        
         xw.WriteStartElement("ВалютаВзаиморасчетов");
         E(xw, "Ссылка", f, 46);
         xw.WriteStartElement("ДанныеКлассификатора");
@@ -556,9 +562,37 @@ public partial class Form1 : Form
 
         xw.WriteEndElement(); // Документ.ЗаказКлиента
     }
+    
+    
 
     // ─── Хелперы ──────────────────────────────────────────────────────────
 
+    
+    private static string FormatContractDate(string val)
+    {
+        if (string.IsNullOrWhiteSpace(val))
+            return string.Empty;
+
+        if (val == "null.null.null null:null")
+            return string.Empty;
+
+        // ожидаем формат: 16.04.2025 10:42
+        var parts = val.Split(' ');
+        if (parts.Length != 2)
+            return val;
+
+        var dateParts = parts[0].Split('.');
+        if (dateParts.Length != 3)
+            return val;
+
+        var day = dateParts[0];
+        var month = dateParts[1];
+        var year = dateParts[2];
+        var time = parts[1];
+
+        return $"{year}-{month}-{day}+{time}";
+    }
+    
     /// Записать элемент — значение как есть (текст, GUID, даты и т.п.)
     private static void E(XmlWriter xw, string name, string[] row, int idx)
         => xw.WriteElementString(name, Get(row, idx));
